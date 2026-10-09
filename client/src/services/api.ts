@@ -12,11 +12,13 @@ import {
 const API_BASE = '/api';
 
 /**
- * Robust fetch wrapper with timeout and json parsing
+ * Robust fetch wrapper with timeout, json parsing, and role header injection
  */
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+  const activeRole = localStorage.getItem('ecosort_role') || 'citizen';
 
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -24,6 +26,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
+        'x-user-role': activeRole,
         ...options.headers
       }
     });
@@ -48,24 +51,62 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 export const api = {
   // Health
   checkHealth: async () => {
-    return apiFetch<{ status: string; app: string; aiEngine: string }>('/health');
+    return apiFetch<{ status: string; app: string; aiEngine: string; wasteTaxonomyCount: number }>('/health');
   },
 
-  // 1. AI Classification
+  // 1. AI Classification & Confidence Confirmation
   classifyWaste: async (payload: {
     imageBase64?: string;
     description?: string;
     manualCategory?: string;
-  }): Promise<{ success: boolean; data: ClassificationResult; earnedPoints: number; totalPoints: number }> => {
+  }): Promise<{
+    success: boolean;
+    data: ClassificationResult;
+    earnedPoints: number;
+    totalPoints: number;
+    requiresConfirmation: boolean;
+  }> => {
     return apiFetch('/ai/classify', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
   },
 
-  // 2. Search
+  confirmFeedback: async (payload: {
+    originalItem: string;
+    confirmedCategory: string;
+    feedbackNotes?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    earnedPoints: number;
+    totalPoints: number;
+  }> => {
+    return apiFetch('/ai/confirm-feedback', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  // 2. Search & Crowdsourced Suggestion
   searchWaste: async (query: string): Promise<{ items: WasteItem[]; query: string; isDynamicMatch?: boolean }> => {
     return apiFetch(`/waste/search?q=${encodeURIComponent(query)}`);
+  },
+
+  suggestItem: async (payload: {
+    name: string;
+    suggestedCategory: string;
+    userNotes?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: any;
+    totalPoints: number;
+  }> => {
+    return apiFetch('/waste/suggest', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
   },
 
   // 3. Segregation
@@ -124,6 +165,7 @@ export const api = {
     success: boolean;
     data: CollectionRequest;
     earnedPoints: number;
+    isHazardousNotice?: boolean;
     message: string;
   }> => {
     return apiFetch('/collections', {
@@ -148,11 +190,13 @@ export const api = {
     status?: string;
     category?: string;
     severity?: string;
-  }): Promise<{ reports: CommunityReport[] }> => {
+    locality?: string;
+  }): Promise<{ reports: CommunityReport[]; total: number }> => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.category) params.append('category', filters.category);
     if (filters?.severity) params.append('severity', filters.severity);
+    if (filters?.locality) params.append('locality', filters.locality);
     return apiFetch(`/reports?${params.toString()}`);
   },
 
@@ -160,6 +204,7 @@ export const api = {
     success: boolean;
     data: CommunityReport;
     earnedPoints: number;
+    warningDuplicate?: string | null;
     message: string;
   }> => {
     return apiFetch('/reports', {
@@ -168,22 +213,32 @@ export const api = {
     });
   },
 
-  upvoteReport: async (id: string): Promise<{ success: boolean; upvotes: number }> => {
+  upvoteReport: async (id: string): Promise<{ success: boolean; upvotes: number; verified?: boolean }> => {
     return apiFetch(`/reports/${id}/upvote`, {
       method: 'POST'
     });
   },
 
-  updateReportStatus: async (id: string, status: string): Promise<{ success: boolean; report: CommunityReport }> => {
+  updateReportStatus: async (
+    id: string,
+    status: string,
+    resolutionNote?: string
+  ): Promise<{ success: boolean; report: CommunityReport }> => {
     return apiFetch(`/reports/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, resolutionNote })
     });
   },
 
   // 7. Alerts
   getAlerts: async (): Promise<{ alerts: SmartAlert[] }> => {
     return apiFetch('/alerts');
+  },
+
+  markAlertRead: async (id: string): Promise<{ success: boolean }> => {
+    return apiFetch(`/alerts/${id}/read`, {
+      method: 'POST'
+    });
   },
 
   // 8. Gamification
@@ -207,9 +262,36 @@ export const api = {
     return apiFetch<any>('/dashboard/community');
   },
 
-  // 10. Admin Overview
+  // 10. Admin Overview & Differentiators
   getAdminOverview: async () => {
     return apiFetch<any>('/admin/overview');
+  },
+
+  getPrioritizedHotspots: async () => {
+    return apiFetch<{ prioritizedHotspots: CommunityReport[] }>('/admin/prioritized-hotspots');
+  },
+
+  getSuggestedRoute: async () => {
+    return apiFetch<{
+      success: boolean;
+      depot: string;
+      totalStops: number;
+      estimatedDistanceKm: string;
+      estimatedDurationHours: string;
+      suggestedStops: any[];
+      notice: string;
+    }>('/admin/suggested-route');
+  },
+
+  updateSuggestedItem: async (id: string, status: 'Approved' | 'Rejected') => {
+    return apiFetch<{ success: boolean; item: any }>(`/admin/suggested-items/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+  },
+
+  getAuditLogs: async () => {
+    return apiFetch<{ auditLogs: any[] }>('/admin/audit-log');
   },
 
   // Demo Reset
@@ -219,4 +301,3 @@ export const api = {
     });
   }
 };
-

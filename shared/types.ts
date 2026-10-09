@@ -169,9 +169,9 @@ export interface LeaderboardEntry {
 export interface GamificationState {
   userPoints: number;
   userLevel: string;
-  userStreakDays?: number;
-  dailyPointsEarned?: number;
-  dailyCap?: number;
+  userStreakDays: number;
+  dailyPointsEarned: number;
+  dailyCap: number;
   userBadges: Badge[];
   weeklyChallenges: Challenge[];
   individualLeaderboard: LeaderboardEntry[];
@@ -209,3 +209,4 @@ export interface AdminAuditLog {
 }
 
 export type LanguageCode = 'en' | 'kn' | 'hi';
+

@@ -2,11 +2,13 @@
   "name": "ecosort-ai",
   "version": "1.0.0",
   "description": "EcoSort AI – Smart Waste Management & Community Action",
+  "type": "module",
   "scripts": {
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"green,blue\" \"npm run server\" \"npm run client\"",
     "start": "concurrently -n \"SERVER,CLIENT\" -c \"green,blue\" \"npm run server\" \"npm run client\"",
+    "seed": "node -e \"import('./server/src/db.js').then(m => { m.db.resetToDemo(); console.log('Database seeded successfully!'); process.exit(0); })\"",
     "build": "npm run build --prefix client",
     "prod": "node server/src/index.js"
   },

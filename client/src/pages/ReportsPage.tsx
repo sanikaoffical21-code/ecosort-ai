@@ -14,7 +14,11 @@ import {
   Layers,
   Sparkles,
   Info,
-  X
+  X,
+  List,
+  Map as MapIcon,
+  Flame,
+  Award
 } from 'lucide-react';
 import { api } from '../services/api';
 import { CommunityReport, ReportCategory, ReportSeverity } from '../types';
@@ -27,6 +31,7 @@ export const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [severityFilter, setSeverityFilter] = useState<string>('All');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showModal, setShowModal] = useState<boolean>(false);
   const [activeReport, setActiveReport] = useState<CommunityReport | null>(null);
 
@@ -36,10 +41,12 @@ export const ReportsPage: React.FC = () => {
   const [description, setDescription] = useState<string>('');
   const [locality, setLocality] = useState<string>('');
   const [severity, setSeverity] = useState<ReportSeverity>('Medium');
+  const [approximateLocation, setApproximateLocation] = useState<boolean>(true);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
   // Map reference
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -55,6 +62,18 @@ export const ReportsPage: React.FC = () => {
   ];
 
   const SEVERITY_LEVELS: ReportSeverity[] = ['Low', 'Medium', 'High', 'Critical'];
+
+  const LOCALITY_PRESETS = [
+    'Indiranagar 100ft Rd',
+    'Koramangala 5th Block',
+    'Whitefield ITPL Main Rd',
+    'HSR Layout Sector 2',
+    'Malleshwaram 8th Cross',
+    'Jayanagar 4th Block',
+    'Electronic City Phase 1',
+    'Hebbal Lake Environs',
+    'RV College Mysuru Rd'
+  ];
 
   const fetchReports = async () => {
     try {
@@ -77,11 +96,11 @@ export const ReportsPage: React.FC = () => {
 
   // Initialize Leaflet Map
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (viewMode !== 'map' || !mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [12.9716, 77.5946], // Bangalore center
+        center: [12.9716, 77.5946], // Bengaluru center
         zoom: 11,
         scrollWheelZoom: false
       });
@@ -95,13 +114,12 @@ export const ReportsPage: React.FC = () => {
     }
 
     return () => {
-      // Cleanup on unmount
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [viewMode]);
 
   // Update Markers on Map
   useEffect(() => {
@@ -113,28 +131,31 @@ export const ReportsPage: React.FC = () => {
       const lat = report.approximateLat || report.lat;
       const lng = report.approximateLng || report.lng;
 
-      // Color coding based on severity
       const markerColor =
         report.severity === 'Critical' ? '#e11d48' :
         report.severity === 'High' ? '#ea580c' :
         report.severity === 'Medium' ? '#d97706' : '#16a34a';
 
-      // Custom SVG marker pin
       const icon = L.divIcon({
         className: 'custom-map-pin',
-        html: `<div style="background-color: ${markerColor}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">!</div>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11]
+        html: `<div style="background-color: ${markerColor}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; cursor: pointer;">${report.verified ? '★' : '!'}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
       });
 
       const marker = L.marker([lat, lng], { icon });
 
       marker.bindPopup(`
-        <div style="font-family: inherit; font-size: 12px; max-width: 200px;">
+        <div style="font-family: inherit; font-size: 12px; max-width: 220px; padding: 2px;">
           <strong style="display: block; color: #0f172a; margin-bottom: 2px;">${report.title}</strong>
           <span style="color: #64748b; font-size: 11px;">📍 ${report.locality}</span>
-          <div style="margin-top: 4px; display: inline-block; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; font-weight: bold; font-size: 10px;">
-            Severity: ${report.severity}
+          <div style="margin-top: 6px; display: flex; gap: 4px; align-items: center;">
+            <span style="padding: 2px 6px; border-radius: 4px; background: #fee2e2; color: #991b1b; font-weight: bold; font-size: 10px;">
+              ${report.severity}
+            </span>
+            <span style="padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 10px;">
+              👍 ${report.upvotes}
+            </span>
           </div>
         </div>
       `);
@@ -153,9 +174,9 @@ export const ReportsPage: React.FC = () => {
       const res = await api.upvoteReport(id);
       if (res.success) {
         setReports(prev =>
-          prev.map(r => (r.id === id ? { ...r, upvotes: res.upvotes } : r))
+          prev.map(r => (r.id === id ? { ...r, upvotes: res.upvotes, verified: res.verified } : r))
         );
-        showToast('Thank you for confirming this community issue!', 'info');
+        showToast('I see this too! Report verified (+1 upvote)', 'info');
       }
     } catch {
       showToast('Could not upvote report.', 'error');
@@ -186,6 +207,7 @@ export const ReportsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setDuplicateWarning(null);
 
     if (!title.trim() || !description.trim() || !locality.trim()) {
       setFormError('Please provide a title, description, and approximate locality.');
@@ -207,7 +229,11 @@ export const ReportsPage: React.FC = () => {
         setReports(prev => [res.data, ...prev]);
         setShowModal(false);
         addPoints(res.earnedPoints, 'Hotspot report verified!');
-        showToast(res.message, 'success');
+        if (res.warningDuplicate) {
+          showToast(res.warningDuplicate, 'info');
+        } else {
+          showToast(res.message, 'success');
+        }
 
         // Reset
         setTitle('');
@@ -236,7 +262,7 @@ export const ReportsPage: React.FC = () => {
             Community Waste Hotspot Reporting
           </h1>
           <p className="text-sm text-slate-600 mt-1">
-            Map overflowing bins, illegal garbage dumps, and blocked collection routes for collective civic resolution.
+            Crowdsource overflowing bins, plastic dumps, and blocked collection routes for priority municipal resolution.
           </p>
         </div>
 
@@ -253,52 +279,35 @@ export const ReportsPage: React.FC = () => {
       <div className="p-3.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs flex items-start gap-2.5">
         <Shield className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong>Privacy Safeguard:</strong> Exact household addresses are never published. Locations are presented at the approximate neighborhood or street-junction level to protect citizen privacy.
+          <strong>Privacy By Design:</strong> Exact household addresses are never recorded or published. Locations are strictly rounded to ~500m locality centroids to protect citizen privacy. EXIF GPS tags are stripped on upload.
         </p>
       </div>
 
-      {/* Interactive OpenStreetMap Container */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-2">
-          <span className="flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-emerald-600" />
-            <span>Interactive Locality Hotspot Map (OpenStreetMap)</span>
-          </span>
-          <span className="text-[11px] text-slate-400 font-normal">
-            Click pins to preview issue summary
-          </span>
-        </div>
-
-        {/* Map div */}
-        <div
-          id="reports-map"
-          ref={mapContainerRef}
-          className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200"
-        />
-
-        {/* Map Legend */}
-        <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 px-2 gap-2">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Critical
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-600"></span> High
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Medium
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Low
-            </span>
-          </div>
-          <span className="text-[10px]">Leaflet 1.9.4 • OpenStreetMap Open Data</span>
-        </div>
-      </div>
-
-      {/* Filter Bar */}
+      {/* View Mode Toggle & Filter Bar */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
         <div className="flex flex-wrap items-center gap-3">
+          {/* Toggle Map / List */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                viewMode === 'map' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>Map View</span>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                viewMode === 'list' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>List View</span>
+            </button>
+          </div>
+
           <div className="flex items-center gap-2">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-xs text-slate-500 font-semibold">Category:</span>
@@ -309,9 +318,7 @@ export const ReportsPage: React.FC = () => {
             >
               <option value="All">All Categories</option>
               {REPORT_CATEGORIES.map(c => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </div>
@@ -325,46 +332,96 @@ export const ReportsPage: React.FC = () => {
             >
               <option value="All">All Severities</option>
               {SEVERITY_LEVELS.map(s => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
         </div>
 
-        <span className="text-xs text-slate-500 font-medium">
-          Showing {reports.length} community report(s)
-        </span>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>{reports.length} hotspot(s) mapped across Bengaluru</span>
+        </div>
       </div>
 
-      {/* Reports Grid */}
+      {/* Map View */}
+      {viewMode === 'map' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-2">
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <span>Interactive Locality Hotspot Map (OpenStreetMap Clustered Pins)</span>
+            </span>
+            <span className="text-[11px] text-slate-400 font-normal">
+              Click pins to inspect details
+            </span>
+          </div>
+
+          <div
+            id="reports-map"
+            ref={mapContainerRef}
+            className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200"
+          />
+
+          {/* Map Legend */}
+          <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 px-2 gap-2">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Critical
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-600"></span> High
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Medium
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Low
+              </span>
+              <span className="flex items-center gap-1 font-bold text-slate-700">
+                <span>★</span> Community Verified (≥10 Upvotes)
+              </span>
+            </div>
+            <span className="text-[10px]">Leaflet 1.9.4 • OpenStreetMap</span>
+          </div>
+        </div>
+      )}
+
+      {/* Reports Grid (Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {reports.map(report => (
           <div
             key={report.id}
             onClick={() => setActiveReport(report)}
-            className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 space-y-4 hover:border-amber-400 transition cursor-pointer flex flex-col justify-between"
+            className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 sm:p-6 space-y-4 hover:border-amber-400 transition cursor-pointer flex flex-col justify-between"
           >
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                   {report.category}
                 </span>
 
-                <span
-                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                    report.severity === 'Critical'
-                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                      : report.severity === 'High'
-                      ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                      : report.severity === 'Medium'
-                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                  }`}
-                >
-                  {report.severity}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {report.verified && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">
+                      <Award className="w-3 h-3 text-emerald-700" />
+                      <span>Verified</span>
+                    </span>
+                  )}
+                  <span
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      report.severity === 'Critical'
+                        ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                        : report.severity === 'High'
+                        ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                        : report.severity === 'Medium'
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}
+                  >
+                    {report.severity}
+                  </span>
+                </div>
               </div>
 
               <h3 className="text-base font-extrabold text-slate-900 leading-snug">
@@ -386,49 +443,47 @@ export const ReportsPage: React.FC = () => {
               )}
             </div>
 
+            {/* Bottom meta row */}
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span className="flex items-center gap-1 font-semibold text-slate-700">
+              <div className="flex items-center gap-1 text-[11px]">
                 <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{report.locality}</span>
-              </span>
+                <span className="truncate max-w-[150px]">{report.locality}</span>
+              </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={e => handleUpvote(report.id, e)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 text-xs font-bold transition"
-                  title="Confirm/Upvote this issue"
-                >
-                  <ThumbsUp className="w-3 h-3 text-emerald-600" />
-                  <span>{report.upvotes}</span>
-                </button>
-
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
-                    report.status === 'Resolved'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                  report.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                }`}>
                   {report.status}
                 </span>
+
+                <button
+                  type="button"
+                  onClick={e => handleUpvote(report.id, e)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 transition cursor-pointer text-xs"
+                  title="I see this too! Confirm this issue to raise municipal priority"
+                >
+                  <ThumbsUp className="w-3 h-3 text-amber-700" />
+                  <span>{report.upvotes}</span>
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Create Report Modal */}
+      {/* Modal for Submitting New Report */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl animate-in zoom-in-95">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl animate-in zoom-in-95 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Report Waste Hotspot</h3>
-                <p className="text-xs text-slate-500">Help sanitation teams locate problem spots</p>
+                <p className="text-xs text-slate-500">Earn +30 Eco Points for valid civic reporting</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -443,7 +498,7 @@ export const ReportsPage: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">
-                  Issue Category *
+                  Hotspot Category *
                 </label>
                 <select
                   value={reportCategory}
@@ -451,25 +506,49 @@ export const ReportsPage: React.FC = () => {
                   className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-emerald-500"
                 >
                   {REPORT_CATEGORIES.map(c => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
 
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">
-                  Short Title *
+                  Issue Title *
                 </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  placeholder="e.g. Overflowing garbage bin near bus stop"
-                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500"
+                  placeholder="e.g. Overflowing garbage bin near bus depot"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 bg-white"
                 />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                  Locality / Landmark *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={locality}
+                  onChange={e => setLocality(e.target.value)}
+                  placeholder="e.g. Indiranagar 12th Main Road"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 bg-white"
+                />
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {LOCALITY_PRESETS.slice(0, 5).map((loc, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setLocality(loc)}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] text-slate-600 cursor-pointer"
+                    >
+                      + {loc}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -481,67 +560,59 @@ export const ReportsPage: React.FC = () => {
                   required
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="Describe the type of waste, approximate size, and hazards (e.g. animals rummaging, odor, blocking footpath)..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Describe waste type, hazard level, and exact landmark..."
+                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 bg-white"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">
-                    Locality / Area Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={locality}
-                    onChange={e => setLocality(e.target.value)}
-                    placeholder="e.g. Indiranagar 12th Main"
-                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">
-                    Severity *
-                  </label>
-                  <select
-                    value={severity}
-                    onChange={e => setSeverity(e.target.value as ReportSeverity)}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {SEVERITY_LEVELS.map(s => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                  Severity Level *
+                </label>
+                <select
+                  value={severity}
+                  onChange={e => setSeverity(e.target.value as ReportSeverity)}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-emerald-500"
+                >
+                  {SEVERITY_LEVELS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Photo Upload */}
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1">
-                  Upload Photo (Optional, max 5MB)
+                  Upload Photo (Optional, &lt; 5MB)
                 </label>
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleImageFile}
-                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                 />
-                {imagePreview && (
-                  <div className="mt-2 h-24 w-24 rounded-lg overflow-hidden border border-slate-200">
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
+              </div>
+
+              {/* Privacy Centroid Checkbox */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="approx-loc"
+                  checked={approximateLocation}
+                  onChange={e => setApproximateLocation(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="approx-loc" className="text-xs text-slate-600 cursor-pointer">
+                  Use approximate location (~500m grid centroid for privacy)
+                </label>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -551,7 +622,7 @@ export const ReportsPage: React.FC = () => {
                   disabled={isSubmitting}
                   className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:bg-amber-300 text-white font-bold flex items-center gap-2 cursor-pointer shadow-md"
                 >
-                  {isSubmitting ? 'Posting Report...' : 'Publish Report (+30 Pts)'}
+                  {isSubmitting ? 'Submitting Report...' : 'Publish Public Hotspot (+30 Pts)'}
                 </button>
               </div>
             </form>
@@ -561,4 +632,3 @@ export const ReportsPage: React.FC = () => {
     </div>
   );
 };
-

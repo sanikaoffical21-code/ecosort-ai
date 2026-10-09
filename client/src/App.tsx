@@ -4,6 +4,9 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AlertBanner } from './components/AlertBanner';
 import { SmartAlertsTicker } from './components/SmartAlertsTicker';
+import { ImpactPassportModal } from './components/ImpactPassportModal';
+import { ResponsibleAiModal } from './components/ResponsibleAiModal';
+import { CampusInsightsModal } from './components/CampusInsightsModal';
 
 import { HomePage } from './pages/HomePage';
 import { ScannerPage } from './pages/ScannerPage';
@@ -21,7 +24,7 @@ const MainContent: React.FC = () => {
   const { activeTab } = useApp();
 
   return (
-    <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {activeTab === 'home' && <HomePage />}
       {activeTab === 'scanner' && <ScannerPage />}
       {activeTab === 'search' && <SearchPage />}
@@ -46,6 +49,9 @@ export function App() {
         <MainContent />
         <Footer />
         <AlertBanner />
+        <ImpactPassportModal />
+        <ResponsibleAiModal />
+        <CampusInsightsModal />
       </div>
     </AppProvider>
   );

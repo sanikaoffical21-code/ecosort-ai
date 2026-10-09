@@ -1,439 +1,120 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { COMPREHENSIVE_WASTE_TAXONOMY } from '../../shared/waste-taxonomy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-// Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Comprehensive database of waste items with guidance
-export const INITIAL_WASTE_ITEMS = [
-  // Wet / Organic
-  {
-    id: 'banana-peel',
-    name: 'Banana Peel',
-    aliases: ['banana skin', 'fruit peel', 'fruit waste'],
-    category: 'Wet/Organic',
-    binColor: 'Green',
-    preparation: 'Remove any fruit stickers or plastic tags before binning.',
-    recyclingPossibility: 'High (Composting / Vermicomposting / Biogas)',
-    disposalMethod: 'Place in designated green wet-waste bin for home composting or municipal organic collection.',
-    safetyPrecautions: 'None. Safe organic matter.',
-    environmentalImpact: 'Decomposes in 2-4 weeks. Composting diverts organic waste from landfills where it would otherwise release potent methane gas.',
-    suggestedAction: 'Add to compost bin or garden soil for rich nutrient humus.',
-    canCompost: true,
-    canRecycle: false,
-    canReuse: false
-  },
-  {
-    id: 'vegetable-scraps',
-    name: 'Vegetable Scraps & Peels',
-    aliases: ['vegetables', 'kitchen waste', 'potato skin', 'carrot peels', 'onion peels'],
-    category: 'Wet/Organic',
-    binColor: 'Green',
-    preparation: 'Drain excess gravy or liquids. Keep in a ventilated container to avoid foul odors.',
-    recyclingPossibility: 'High (Composting)',
-    disposalMethod: 'Put directly into the wet waste green bin or compost tumbler.',
-    safetyPrecautions: 'Wash hands after handling if rotting.',
-    environmentalImpact: 'Produces nutrient-rich soil enhancer; prevents anaerobic methane formation.',
-    suggestedAction: 'Compost at home or send to community aerated composting units.',
-    canCompost: true,
-    canRecycle: false,
-    canReuse: false
-  },
-  {
-    id: 'leftover-food',
-    name: 'Leftover Food & Cooked Rice/Curry',
-    aliases: ['cooked food', 'spoiled food', 'rotten food', 'leftovers'],
-    category: 'Wet/Organic',
-    binColor: 'Green',
-    preparation: 'Strain oily gravies. Do not mix with plastic wrappers or aluminum foil.',
-    recyclingPossibility: 'Medium (Biogas generation or high-temperature composting)',
-    disposalMethod: 'Wet waste green bin or community bio-methanation plant.',
-    safetyPrecautions: 'Cover promptly to deter pests, flies, and rodents.',
-    environmentalImpact: 'Diverts food waste from open dumps.',
-    suggestedAction: 'Feed stray animals if safe and fresh, or divert to bio-methanation.',
-    canCompost: true,
-    canRecycle: false,
-    canReuse: false
-  },
-  {
-    id: 'tea-bags-coffee-grounds',
-    name: 'Tea Leaves & Coffee Grounds',
-    aliases: ['tea bag', 'tea leaves', 'coffee powder', 'used coffee'],
-    category: 'Wet/Organic',
-    binColor: 'Green',
-    preparation: 'Tear open tea bag if it contains synthetic nylon mesh or metal staple, keeping only the tea leaves.',
-    recyclingPossibility: 'High (Natural fertilizer)',
-    disposalMethod: 'Direct organic compost bin or sprinkle on acid-loving garden plants (roses, tomatoes).',
-    safetyPrecautions: 'Ensure staples are removed.',
-    environmentalImpact: 'High nitrogen source that supercharges microbial decomposition.',
-    suggestedAction: 'Sprinkle directly onto garden soil or vermicompost.',
-    canCompost: true,
-    canRecycle: false,
-    canReuse: false
-  },
+export const INITIAL_WASTE_ITEMS = COMPREHENSIVE_WASTE_TAXONOMY;
 
-  // Dry / Recyclable / Plastic
-  {
-    id: 'plastic-bottle',
-    name: 'PET Plastic Water / Soda Bottle',
-    aliases: ['plastic bottle', 'mineral water bottle', 'cold drink bottle', 'coke bottle'],
-    category: 'Plastic',
-    binColor: 'Blue',
-    preparation: 'Empty contents, rinse clean, flatten/crush bottle to save space, screw cap back on.',
-    recyclingPossibility: 'High (Recyclable into polyester yarn, textiles, new bottles)',
-    disposalMethod: 'Dry recyclable bin (Blue) or handover to registered dry waste collection center.',
-    safetyPrecautions: 'Ensure no residual toxic chemicals or detergents.',
-    environmentalImpact: 'Takes 450+ years to degrade in landfills; recycling 1 ton saves 1.5 tons of CO2.',
-    suggestedAction: 'Clean, flatten, and deposit in plastic recycling bin.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: true
-  },
-  {
-    id: 'milk-pouch',
-    name: 'Milk Pouch / LDPE Plastic Packet',
-    aliases: ['milk packet', 'oil pouch', 'soft plastic'],
-    category: 'Plastic',
-    binColor: 'Blue',
-    preparation: 'Cut along edge without detaching tiny corner snippet (keep snippet attached), rinse thoroughly and dry completely.',
-    recyclingPossibility: 'High (Recycled into poly-granules, pipes, tarpaulins)',
-    disposalMethod: 'Dry waste bin. Ensure completely dry to avoid fungal mold ruining recyclables.',
-    safetyPrecautions: 'Clean dairy residue to prevent odor.',
-    environmentalImpact: 'Prevents microplastic pollution and animal ingestion.',
-    suggestedAction: 'Collect clean pouches in bundle and hand over to local dry waste center.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: false
-  },
-  {
-    id: 'shampoo-bottle',
-    name: 'HDPE Shampoo / Detergent Bottle',
-    aliases: ['shampoo bottle', 'conditioner bottle', 'body wash bottle', 'detergent bottle'],
-    category: 'Plastic',
-    binColor: 'Blue',
-    preparation: 'Rinse out soap residue, remove pump nozzle if it contains a metal spring.',
-    recyclingPossibility: 'High (HDPE is easily recycled into crates, containers, pipes)',
-    disposalMethod: 'Dry recyclable bin (Blue).',
-    safetyPrecautions: 'Wash off concentrated detergents.',
-    environmentalImpact: 'Saves crude oil and petrochemical energy required for virgin plastic production.',
-    suggestedAction: 'Refill if using bulk refills, or place in plastic recycling bin.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: true
-  },
-  {
-    id: 'cardboard-box',
-    name: 'Corrugated Cardboard Box / Shipping Carton',
-    aliases: ['amazon box', 'delivery box', 'packaging carton', 'cardboard'],
-    category: 'Dry/Recyclable',
-    binColor: 'Blue',
-    preparation: 'Peel off shipping plastic tape, flatten the box completely to reduce volume.',
-    recyclingPossibility: 'Very High (Can be pulped and recycled 5-7 times)',
-    disposalMethod: 'Dry recyclable paper/cardboard bin or bundle for local paper recycling kabadiwala.',
-    safetyPrecautions: 'Keep dry. Wet cardboard cannot be recycled and rots.',
-    environmentalImpact: 'Recycling 1 ton of cardboard saves 17 trees, 7000 gallons of water, and 4000 kWh of energy.',
-    suggestedAction: 'Flatten and reuse for storage or send to paper mill recyclers.',
-    canCompost: true,
-    canRecycle: true,
-    canReuse: true
-  },
-  {
-    id: 'newspaper',
-    name: 'Newspaper & Office Paper',
-    aliases: ['papers', 'waste paper', 'magazine', 'notebook', 'xerox paper'],
-    category: 'Dry/Recyclable',
-    binColor: 'Blue',
-    preparation: 'Remove plastic clips, binder spirals, or metallic pins. Stack flat.',
-    recyclingPossibility: 'High (Newsprint, paper bags, egg cartons)',
-    disposalMethod: 'Dry recyclable paper bin or scrap dealer.',
-    safetyPrecautions: 'Keep free from food grease, oil, and moisture.',
-    environmentalImpact: 'Significantly reduces deforestation and paper mill carbon footprint.',
-    suggestedAction: 'Bundle and donate/sell to paper recyclers, or use for wrapping.',
-    canCompost: true,
-    canRecycle: true,
-    canReuse: true
-  },
-
-  // E-waste
-  {
-    id: 'old-mobile-phone',
-    name: 'Old Smartphone / Mobile Phone',
-    aliases: ['smartphone', 'cellphone', 'iphone', 'android phone', 'old mobile'],
-    category: 'E-waste',
-    binColor: 'Brown/E-waste Bin',
-    preparation: 'Backup personal data, perform factory reset, remove SIM & memory cards. Do not puncture the lithium battery.',
-    recyclingPossibility: 'High (Contains precious metals: gold, copper, silver, palladium)',
-    disposalMethod: 'Drop at authorized e-waste collection center, brand exchange program, or schedule an EcoSort e-waste pickup.',
-    safetyPrecautions: 'Lithium battery risk: if swollen, do not compress, puncture, or heat. Store in cool, dry place.',
-    environmentalImpact: 'Prevents toxic lead, mercury, and cadmium from leaching into groundwater aquifers.',
-    suggestedAction: 'Consider repair/refurbishment, donation to students, or drop at certified e-waste bin.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: true
-  },
-  {
-    id: 'used-battery',
-    name: 'Used Alkaline / Lithium Battery',
-    aliases: ['battery', 'aa battery', 'aaa battery', 'laptop battery', 'powerbank'],
-    category: 'E-waste',
-    binColor: 'Red / E-waste Bin',
-    preparation: 'Tape both terminals with non-conductive electrical tape to avoid accidental short circuits.',
-    recyclingPossibility: 'High (Recovers zinc, nickel, cobalt, lithium, steel)',
-    disposalMethod: 'Authorized battery drop box at electronics retailers or municipal e-waste kiosks. NEVER throw in household garbage.',
-    safetyPrecautions: 'CRITICAL HAZARD: Corrosive electrolytes, heavy metals, fire hazard if crushed in garbage trucks.',
-    environmentalImpact: 'A single AA battery can contaminate thousands of liters of groundwater if landfilled.',
-    suggestedAction: 'Store in airtight plastic container until dropping at a designated battery depot.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: false
-  },
-  {
-    id: 'broken-laptop-charger',
-    name: 'Broken Laptop / Phone Charger & Cables',
-    aliases: ['charger', 'usb cable', 'power cord', 'headphones', 'adapter'],
-    category: 'E-waste',
-    binColor: 'Brown/E-waste Bin',
-    preparation: 'Coil neatly. Keep metal pins intact.',
-    recyclingPossibility: 'High (High-grade copper wiring and PVC insulation recovery)',
-    disposalMethod: 'Drop off at designated e-waste drop-off bins or community e-waste collection drives.',
-    safetyPrecautions: 'Do not use frayed cables connected to live AC current.',
-    environmentalImpact: 'Conserves copper mining resources and prevents open-air wire burning.',
-    suggestedAction: 'Repair with heat-shrink tubing if minor wire cut, or recycle via certified e-waste handler.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: true
-  },
-
-  // Glass
-  {
-    id: 'broken-glass',
-    name: 'Broken Glass Tumbler / Window Pane',
-    aliases: ['broken glass', 'glass bottle broken', 'shattered glass', 'mirror shards'],
-    category: 'Glass',
-    binColor: 'Cyan/Blue with Hazard Warning',
-    preparation: 'Carefully wrap tightly in multiple layers of old newspaper or place inside a sealed cardboard box. Clearly mark: "DANGER: BROKEN GLASS".',
-    recyclingPossibility: 'Medium-High (Container glass is 100% recyclable; window/mirror plate glass has different melting points and requires separate stream)',
-    disposalMethod: 'Wrapped in box and placed alongside dry waste with clear handwritten warning, or hand directly to sanitation worker.',
-    safetyPrecautions: 'SEVERE INJURY HAZARD: Use thick gloves and broom/dustpan. Sanitation workers suffer severe lacerations when broken glass is hidden in regular bags.',
-    environmentalImpact: 'Glass never decomposes in nature, taking over 1 million years. Recycling 1 ton saves 1.2 tons of raw materials.',
-    suggestedAction: 'Safely wrap, label with red marker, and hand over with notification.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: false
-  },
-  {
-    id: 'glass-jar',
-    name: 'Glass Jam / Pickle Jar',
-    aliases: ['glass jar', 'pickle jar', 'honey jar', 'glass bottle'],
-    category: 'Glass',
-    binColor: 'Cyan/Blue',
-    preparation: 'Wash clean, soak off label if feasible, separate metal or plastic lid.',
-    recyclingPossibility: 'Very High (Glass is infinitely recyclable with zero loss in quality)',
-    disposalMethod: 'Dry recyclable bin or glass recycling station.',
-    safetyPrecautions: 'Check for chips or hairline cracks.',
-    environmentalImpact: 'Recycling glass saves 30% energy compared to manufacturing from raw silica sand.',
-    suggestedAction: 'Reuse as pantry storage container, spice shaker, or plant propagator.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: true
-  },
-
-  // Metal
-  {
-    id: 'aluminum-can',
-    name: 'Aluminum Beverage Can',
-    aliases: ['soda can', 'beer can', 'tin can', 'coke can'],
-    category: 'Metal',
-    binColor: 'Grey/Blue',
-    preparation: 'Rinse out sticky sweet residue, crush can flat.',
-    recyclingPossibility: 'Infinite (Aluminum can be recycled back onto store shelves in as little as 60 days)',
-    disposalMethod: 'Dry recyclable metal bin.',
-    safetyPrecautions: 'Watch for sharp pull-tab edges.',
-    environmentalImpact: 'Recycling aluminum uses 95% less energy than extracting virgin bauxite ore.',
-    suggestedAction: 'Crush and sell/give to scrap metal collectors.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: true
-  },
-
-  // Hazardous
-  {
-    id: 'paint-can-chemicals',
-    name: 'Paint Thinner / Solvent / Pesticide Bottle',
-    aliases: ['paint can', 'solvent', 'insecticide', 'pesticide', 'bleach', 'chemical container'],
-    category: 'Hazardous waste',
-    binColor: 'Red Hazardous Bin',
-    preparation: 'Keep in original labeled container. Tighten cap securely. Do not pour chemicals down domestic drains or stormwater drains.',
-    recyclingPossibility: 'Low (Must be neutralized in authorized hazardous waste treatment plants)',
-    disposalMethod: 'Designated hazardous waste kiosk or municipal chemical disposal center.',
-    safetyPrecautions: 'CRITICAL HAZARD: Toxic fumes, corrosive skin burn, inflammable. Wear rubber gloves and goggles.',
-    environmentalImpact: 'Chemical runoff contaminates municipal sewage treatment microbes, rivers, and aquatic wildlife.',
-    suggestedAction: 'Seal tightly and surrender to municipal hazardous waste disposal facility.',
-    canCompost: false,
-    canRecycle: false,
-    canReuse: false
-  },
-
-  // Medical / Sanitary
-  {
-    id: 'sanitary-pads-diapers',
-    name: 'Sanitary Pads, Tampons & Diapers',
-    aliases: ['sanitary napkin', 'pad', 'diaper', 'pampers', 'baby diaper'],
-    category: 'Medical/sanitary waste',
-    binColor: 'Red / Incineration Stream',
-    preparation: 'Wrap securely in newspaper or biodegradable disposal bag, mark with a red cross or "Sanitary Waste". NEVER flush down toilets.',
-    recyclingPossibility: 'None (Biohazard)',
-    disposalMethod: 'Separate sanitary waste bag for high-temperature biomedical incineration.',
-    safetyPrecautions: 'BIOHAZARD: Pathogens and bloodborne viruses. Always wrap discreetly and hygienically for sanitation worker dignity.',
-    environmentalImpact: 'Contains super-absorbent polymers and plastics that take up to 500 years to break down.',
-    suggestedAction: 'Wrap with red mark and hand over in separate sanitary waste stream.',
-    canCompost: false,
-    canRecycle: false,
-    canReuse: false
-  },
-  {
-    id: 'medical-blister-packs-medicines',
-    name: 'Expired Medicines & Blister Packs',
-    aliases: ['expired tablets', 'medicine strips', 'syrup bottle', 'pills'],
-    category: 'Medical/sanitary waste',
-    binColor: 'Red Hazardous/Medical Bin',
-    preparation: 'Keep tablets in foil strips. Do not crush or flush down toilets as pharmaceuticals enter water supply.',
-    recyclingPossibility: 'Low-Medium (Specialized high-temperature incineration)',
-    disposalMethod: 'Pharmacy drug take-back boxes or municipal domestic hazardous waste collection.',
-    safetyPrecautions: 'Keep out of reach of children and domestic pets.',
-    environmentalImpact: 'Flushed antibiotics foster antibiotic-resistant bacteria superbugs in municipal water systems.',
-    suggestedAction: 'Take to participating pharmacy take-back collection point.',
-    canCompost: false,
-    canRecycle: false,
-    canReuse: false
-  },
-
-  // Textile
-  {
-    id: 'old-clothes-textile',
-    name: 'Old Clothes / Fabric Scraps',
-    aliases: ['jeans', 't-shirt', 'bedsheet', 'curtains', 'old clothes', 'cotton shirt'],
-    category: 'Textile',
-    binColor: 'Purple / Textile Bin',
-    preparation: 'Wash clean and dry. Check if still wearable before discarding.',
-    recyclingPossibility: 'High (Wearable clothes can be donated; damaged cloth can be shredded into automotive insulation or wiping rags)',
-    disposalMethod: 'Textile donation bank, clothing thrift drop-box, or dry textile stream.',
-    safetyPrecautions: 'Ensure dry and mold-free.',
-    environmentalImpact: 'Fast fashion creates massive water footprint; 1 cotton t-shirt requires 2,700 liters of water.',
-    suggestedAction: 'Donate wearable items to local charities/shelters, or upcycle into tote bags or cleaning cloths.',
-    canCompost: false,
-    canRecycle: true,
-    canReuse: true
-  }
+// Generate 60+ realistic community reports across Bengaluru localities
+const LOCALITIES = [
+  { name: 'Indiranagar 100ft Rd', lat: 12.9784, lng: 77.6408 },
+  { name: 'Koramangala 5th Block', lat: 12.9352, lng: 77.6245 },
+  { name: 'Whitefield ITPL Main Rd', lat: 12.9698, lng: 77.7499 },
+  { name: 'HSR Layout Sector 2', lat: 12.9121, lng: 77.6446 },
+  { name: 'Malleshwaram 8th Cross', lat: 13.0035, lng: 77.5711 },
+  { name: 'Jayanagar 4th Block', lat: 12.9250, lng: 77.5938 },
+  { name: 'Electronic City Phase 1', lat: 12.8452, lng: 77.6602 },
+  { name: 'Hebbal Lake Environs', lat: 13.0358, lng: 77.5970 },
+  { name: 'Rajajinagar 1st Block', lat: 12.9982, lng: 77.5530 },
+  { name: 'BTM Layout 2nd Stage', lat: 12.9166, lng: 77.6101 },
+  { name: 'Marathahalli Bridge', lat: 12.9591, lng: 77.7011 },
+  { name: 'RV College Mysuru Rd', lat: 12.9238, lng: 77.4988 }
 ];
 
-// Initial Realistic Community Reports
-export const INITIAL_REPORTS = [
-  {
-    id: 'rep-101',
-    category: 'Overflowing bins',
-    title: 'Overflowing commercial waste bin near Metro Station',
-    description: 'The community twin-bins on 100ft road are overflowing onto the pedestrian footpath. Wet food waste is attracting stray animals.',
-    locality: 'Indiranagar 12th Main',
-    city: 'Bengaluru',
-    lat: 12.9784,
-    lng: 77.6408,
-    severity: 'High',
-    status: 'In Progress',
-    reportedBy: 'Kavya S.',
-    reportedAt: '2026-10-06T09:30:00Z',
-    upvotes: 14,
-    imageUrl: 'https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 'rep-102',
-    category: 'Garbage dumping',
-    title: 'Illegal construction debris and mixed plastic dumping in open plot',
-    description: 'Empty vacant plot near 5th Block park has multiple sacks of mixed plastic waste and dry debris dumped overnight.',
-    locality: 'Koramangala 5th Block',
-    city: 'Bengaluru',
-    lat: 12.9352,
-    lng: 77.6245,
-    severity: 'High',
-    status: 'Under Review',
-    reportedBy: 'Arjun Verma',
-    reportedAt: '2026-10-07T14:15:00Z',
-    upvotes: 22,
-    imageUrl: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 'rep-103',
-    category: 'E-waste dumping',
-    title: 'Abandoned CRT monitors and broken tube lights behind tech park',
-    description: 'Someone dumped 4 old computer cathode ray monitors and discarded fluorescent tubes near the stormwater culvert.',
-    locality: 'Whitefield Outer Ring Rd',
-    city: 'Bengaluru',
-    lat: 12.9698,
-    lng: 77.7499,
-    severity: 'Critical',
-    status: 'Reported',
-    reportedBy: 'Pooja Hegde',
-    reportedAt: '2026-10-08T07:45:00Z',
-    upvotes: 31,
-    imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 'rep-104',
-    category: 'Plastic accumulation',
-    title: 'Single-use plastic cups and packaging clogged in roadside drain',
-    description: 'Accumulation of plastic disposable cups from nearby food stalls blocking storm drain before monsoon showers.',
-    locality: 'Malleshwaram 8th Cross',
-    city: 'Bengaluru',
-    lat: 13.0035,
-    lng: 77.5711,
-    severity: 'Medium',
-    status: 'Resolved',
-    resolvedAt: '2026-10-07T18:00:00Z',
-    reportedBy: 'Ramesh Gowda',
-    reportedAt: '2026-10-05T11:20:00Z',
-    upvotes: 18,
-    imageUrl: 'https://images.unsplash.com/photo-1621451537084-482c73073a0f?w=800&auto=format&fit=crop&q=60'
-  },
-  {
-    id: 'rep-105',
-    category: 'Blocked garbage collection points',
-    title: 'Sanitation vehicle access blocked by parked commercial goods vehicle',
-    description: 'Daily municipal collection auto-tippers are unable to reach the apartment community waste depot.',
-    locality: 'HSR Layout Sector 2',
-    city: 'Bengaluru',
-    lat: 12.9121,
-    lng: 77.6446,
-    severity: 'Low',
-    status: 'Resolved',
-    resolvedAt: '2026-10-06T12:00:00Z',
-    reportedBy: 'Ananya Roy',
-    reportedAt: '2026-10-06T08:10:00Z',
-    upvotes: 8,
-    imageUrl: ''
-  }
+const REPORT_TEMPLATES = [
+  { category: 'Overflowing bins', title: 'Community twin-bin overflowing on pedestrian walkway', desc: 'Wet food waste and plastic wrappers spilling onto footpath attracting stray dogs.', sev: 'High' },
+  { category: 'Garbage dumping', title: 'Open plot illegal mixed garbage dump', desc: 'Construction debris and discarded commercial sacks dumped near boundary wall.', sev: 'High' },
+  { category: 'Plastic accumulation', title: 'Single-use plastic cups choking stormwater drain', desc: 'Tea stall plastic glasses and packaging accumulation before upcoming rains.', sev: 'Medium' },
+  { category: 'E-waste dumping', title: 'Discarded electronics and broken monitor tubes', desc: 'Cathode ray tubes and wire bundles abandoned behind electrical transformer.', sev: 'Critical' },
+  { category: 'Blocked garbage collection points', title: 'Commercial vehicle blocking auto-tipper access', desc: 'Sanitation pickup van unable to access apartment waste segregation enclosure.', sev: 'Low' },
+  { category: 'Garbage dumping', title: 'Dry waste and cardboard packaging burn risk', desc: 'Large pile of dry packing material left unattended next to dry vegetation.', sev: 'Critical' },
+  { category: 'Overflowing bins', title: 'Market vegetable market bin overflowing', desc: 'Rotten vegetables creating odor and slip hazard near bus shelter.', sev: 'Medium' },
+  { category: 'Plastic accumulation', title: 'LDPE milk packets accumulated near culvert', desc: 'Floating soft plastics accumulating in roadside culvert basin.', sev: 'Medium' }
 ];
 
-// Initial Collection Requests
+const CITIZEN_NAMES = ['Kavya S.', 'Arjun V.', 'Pooja Hegde', 'Ramesh Gowda', 'Ananya Roy', 'Sunil Kumar', 'Deepa Nair', 'Vikas Sharma', 'Divya Patel', 'Karthik Raja', 'Meera Rao', 'Suresh Babu'];
+
+function generateInitialReports() {
+  const reports = [];
+  let idCounter = 101;
+
+  for (let i = 0; i < 62; i++) {
+    const loc = LOCALITIES[i % LOCALITIES.length];
+    const tmpl = REPORT_TEMPLATES[i % REPORT_TEMPLATES.length];
+    const citizen = CITIZEN_NAMES[i % CITIZEN_NAMES.length];
+
+    // Jitter coordinates within ~400 meters for realistic clustering
+    const latJitter = (Math.random() - 0.5) * 0.008;
+    const lngJitter = (Math.random() - 0.5) * 0.008;
+    const lat = +(loc.lat + latJitter).toFixed(4);
+    const lng = +(loc.lng + lngJitter).toFixed(4);
+
+    const daysAgo = Math.floor(Math.random() * 20);
+    const date = new Date(Date.now() - daysAgo * 24 * 3600 * 1000).toISOString();
+
+    const statuses = ['Reported', 'Under Review', 'In Progress', 'Resolved'];
+    const status = i < 15 ? 'Reported' : i < 30 ? 'In Progress' : i < 45 ? 'Under Review' : 'Resolved';
+
+    const upvotes = Math.floor(Math.random() * 35) + 1;
+    const verified = upvotes >= 10;
+
+    // Severity score for prioritization
+    const sevScore = tmpl.sev === 'Critical' ? 4 : tmpl.sev === 'High' ? 3 : tmpl.sev === 'Medium' ? 2 : 1;
+    const ageDays = daysAgo;
+    const priorityScore = +(sevScore * 1.5 + upvotes * 0.4 + ageDays * 0.2).toFixed(1);
+
+    reports.push({
+      id: `rep-${idCounter++}`,
+      category: tmpl.category,
+      title: `${tmpl.title} (${loc.name})`,
+      description: tmpl.desc,
+      locality: loc.name,
+      city: 'Bengaluru',
+      lat,
+      lng,
+      approximateLat: +lat.toFixed(3),
+      approximateLng: +lng.toFixed(3),
+      severity: tmpl.sev,
+      status,
+      reportedBy: citizen,
+      reportedAt: date,
+      resolvedAt: status === 'Resolved' ? new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() : undefined,
+      resolutionNote: status === 'Resolved' ? 'Cleaned by Ward Sanitation Taskforce. Waste transported to dry waste depot.' : undefined,
+      upvotes,
+      verified,
+      priorityScore,
+      priorityReason: tmpl.sev === 'Critical' ? 'Imminent ecological / fire safety risk' : upvotes > 15 ? 'High citizen community consensus' : 'Standard scheduled ward priority',
+      imageUrl: i % 3 === 0 ? 'https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?w=800&auto=format&fit=crop&q=60' : undefined
+    });
+  }
+
+  return reports;
+}
+
+export const INITIAL_REPORTS = generateInitialReports();
+
+// Initial Realistic Collection Requests in all 4 statuses
 export const INITIAL_COLLECTIONS = [
   {
     id: 'col-501',
     wasteType: 'E-waste (Computers, Batteries, Cables)',
     quantity: 'approx. 18 kg (2 cartons)',
     pickupArea: 'Indiranagar 4th Cross',
-    preferredDate: '2026-10-10',
+    preferredDate: '2026-10-12',
     contactName: 'Rohit Kulkarni',
     contactPhone: '+91 98450 12345',
     email: 'rohit.kulkarni@example.com',
     status: 'Assigned',
-    provider: 'GreenClean Karnataka E-Recyclers (Reg. #KA-EW-291)',
+    provider: 'GreenClean Karnataka E-Recyclers (Reg. #KA-EW-291) [Demo provider, no real municipal integration]',
     notes: 'Please pick up after 10 AM. Contains two dead laptops and battery packs.',
     createdAt: '2026-10-06T15:20:00Z'
   },
@@ -442,12 +123,12 @@ export const INITIAL_COLLECTIONS = [
     wasteType: 'Dry/Recyclable (Cardboard & Paper)',
     quantity: 'approx. 45 kg',
     pickupArea: 'RV College Hostel Campus, Mysuru Rd',
-    preferredDate: '2026-10-11',
+    preferredDate: '2026-10-14',
     contactName: 'Vikas Sharma (Student Eco Club)',
     contactPhone: '+91 97412 88990',
     email: 'ecoclub@rvce.edu',
     status: 'Pending',
-    provider: 'Unassigned',
+    provider: 'Pending Municipality/Recycler Assignment',
     notes: 'Post-hackathon cardboard boxes and project materials stacked near Gate 3.',
     createdAt: '2026-10-07T11:45:00Z'
   },
@@ -461,7 +142,7 @@ export const INITIAL_COLLECTIONS = [
     contactPhone: '+91 99001 44321',
     email: 'sneha.p@example.com',
     status: 'Collected',
-    provider: 'Hasiru Dala Community Recyclers',
+    provider: 'Hasiru Dala Community Recyclers [Demo provider, no real municipal integration]',
     notes: 'Sorted into segregated bags and weighed at pickup point.',
     createdAt: '2026-10-04T16:10:00Z'
   },
@@ -475,29 +156,68 @@ export const INITIAL_COLLECTIONS = [
     contactPhone: '+91 98860 77123',
     email: 'deepanair@example.com',
     status: 'Completed',
-    provider: 'Goonj Urban Outreach Partner',
+    provider: 'Goonj Urban Outreach Partner [Demo provider, no real municipal integration]',
     notes: 'Washed and folded clothing sorted by age category. Acknowledged by NGO.',
     createdAt: '2026-10-02T10:00:00Z'
+  },
+  {
+    id: 'col-505',
+    wasteType: 'Bulk Cardboard Shipping Cartons',
+    quantity: 'approx. 60 kg',
+    pickupArea: 'HSR Layout Sector 1',
+    preferredDate: '2026-10-15',
+    contactName: 'Anil Deshmukh',
+    contactPhone: '+91 98451 99887',
+    email: 'anil@hsr-tech.in',
+    status: 'Pending',
+    provider: 'Pending Municipality/Recycler Assignment',
+    notes: 'Office relocation packing boxes flattened and bundled.',
+    createdAt: '2026-10-08T09:15:00Z'
+  },
+  {
+    id: 'col-506',
+    wasteType: 'Glass Bottles & Jars',
+    quantity: 'approx. 15 kg',
+    pickupArea: 'Malleshwaram 15th Cross',
+    preferredDate: '2026-10-13',
+    contactName: 'Sita Ramaswamy',
+    contactPhone: '+91 94480 33221',
+    email: 'sita.r@gmail.com',
+    status: 'Assigned',
+    provider: 'GlassCycle Bangalore Urban Depot [Demo provider, no real municipal integration]',
+    notes: 'Rinsed clean pickle and jam jars in cardboard box.',
+    createdAt: '2026-10-07T16:30:00Z'
   }
 ];
 
-// Initial Impact Logs
+// 4 Weeks of realistic Impact Logs
 export const INITIAL_IMPACT_LOGS = [
-  { id: 'imp-1', user: 'Demo User', plasticKg: 3.5, paperKg: 12.0, eWasteKg: 2.1, organicKg: 15.0, date: '2026-10-05' },
-  { id: 'imp-2', user: 'Demo User', plasticKg: 1.8, paperKg: 6.5, eWasteKg: 0.0, organicKg: 18.0, date: '2026-10-06' },
-  { id: 'imp-3', user: 'Demo User', plasticKg: 2.2, paperKg: 8.0, eWasteKg: 1.5, organicKg: 14.5, date: '2026-10-07' }
+  { id: 'imp-1', user: 'You (Citizen Eco-Guard)', plasticKg: 3.5, paperKg: 12.0, eWasteKg: 2.1, organicKg: 15.0, date: '2026-10-08' },
+  { id: 'imp-2', user: 'You (Citizen Eco-Guard)', plasticKg: 2.2, paperKg: 8.5, eWasteKg: 0.0, organicKg: 18.0, date: '2026-10-05' },
+  { id: 'imp-3', user: 'You (Citizen Eco-Guard)', plasticKg: 1.8, paperKg: 6.0, eWasteKg: 1.5, organicKg: 14.5, date: '2026-10-01' },
+  { id: 'imp-4', user: 'You (Citizen Eco-Guard)', plasticKg: 4.0, paperKg: 14.2, eWasteKg: 0.0, organicKg: 22.0, date: '2026-09-24' },
+  { id: 'imp-5', user: 'You (Citizen Eco-Guard)', plasticKg: 2.9, paperKg: 9.8, eWasteKg: 3.2, organicKg: 19.5, date: '2026-09-17' },
+  { id: 'imp-6', user: 'You (Citizen Eco-Guard)', plasticKg: 3.1, paperKg: 11.0, eWasteKg: 0.0, organicKg: 16.0, date: '2026-09-10' }
 ];
 
-// Gamification Data
+// 10+ Gamification Badges
 export const INITIAL_GAMIFICATION = {
-  userPoints: 460,
+  userPoints: 580,
   userLevel: 'Eco Guardian (Level 3)',
+  userStreakDays: 6,
+  dailyPointsEarned: 30,
+  dailyCap: 150,
   userBadges: [
-    { id: 'b1', name: 'Segregation Specialist', icon: '🌱', description: 'Classified over 10 items accurately', unlocked: true, unlockedAt: '2026-10-03' },
-    { id: 'b2', name: 'Compost Hero', icon: '🍂', description: 'Logged 25+ kg of organic composting', unlocked: true, unlockedAt: '2026-10-05' },
-    { id: 'b3', name: 'Watchful Citizen', icon: '📍', description: 'Reported an active community waste hotspot', unlocked: true, unlockedAt: '2026-10-06' },
-    { id: 'b4', name: 'Zero-E-Waste Champion', icon: '⚡', description: 'Safely recycled e-waste via authorized pickup', unlocked: false },
-    { id: 'b5', name: 'Community Pillar', icon: '🏆', description: 'Helped resolve 5 community waste issues', unlocked: false }
+    { id: 'b1', name: 'Segregation Specialist', icon: '🌱', description: 'Classified over 10 items accurately with circular bin rules', unlocked: true, unlockedAt: '2026-10-03' },
+    { id: 'b2', name: 'Compost Hero', icon: '🍂', description: 'Logged 25+ kg of organic kitchen composting', unlocked: true, unlockedAt: '2026-10-05' },
+    { id: 'b3', name: 'Watchful Citizen', icon: '📍', description: 'Reported an active community waste hotspot on the live map', unlocked: true, unlockedAt: '2026-10-06' },
+    { id: 'b4', name: 'Zero-E-Waste Champion', icon: '⚡', description: 'Safely diverted obsolete electronic devices via certified recycler', unlocked: true, unlockedAt: '2026-10-07' },
+    { id: 'b5', name: 'Community Pillar', icon: '🏆', description: 'Helped resolve 5 community waste issues through active civic reporting', unlocked: false },
+    { id: 'b6', name: 'Plastic Reducer', icon: '🥤', description: 'Diverted 10+ kg of single-use and flexible polymers from landfills', unlocked: true, unlockedAt: '2026-10-02' },
+    { id: 'b7', name: 'Circular Pioneer', icon: '♻️', description: 'Completed a 7-day zero-waste segregation streak', unlocked: false },
+    { id: 'b8', name: 'Master Recycler', icon: '📦', description: 'Logged paper, plastic, glass, and metal recycling in one week', unlocked: true, unlockedAt: '2026-10-04' },
+    { id: 'b9', name: 'Hazard Guardian', icon: '🛡️', description: 'Handled and routed hazardous items safely without drain pouring', unlocked: true, unlockedAt: '2026-10-06' },
+    { id: 'b10', name: 'Campus Champion', icon: '🎓', description: 'Contributed 50+ points to student institutional team standing', unlocked: false }
   ],
   weeklyChallenges: [
     {
@@ -505,11 +225,11 @@ export const INITIAL_GAMIFICATION = {
       title: 'Zero Single-Use Plastic Week',
       description: 'Carry a reusable bottle and canvas tote bag for 7 consecutive days.',
       rewardPoints: 100,
-      currentProgress: 5,
+      currentProgress: 6,
       targetProgress: 7,
       unit: 'days',
       completed: false,
-      deadline: '2026-10-12'
+      deadline: '2026-10-15'
     },
     {
       id: 'wc-2',
@@ -520,7 +240,7 @@ export const INITIAL_GAMIFICATION = {
       targetProgress: 10,
       unit: 'kg',
       completed: true,
-      deadline: '2026-10-11'
+      deadline: '2026-10-14'
     },
     {
       id: 'wc-3',
@@ -531,14 +251,14 @@ export const INITIAL_GAMIFICATION = {
       targetProgress: 3,
       unit: 'items',
       completed: false,
-      deadline: '2026-10-15'
+      deadline: '2026-10-18'
     }
   ],
   individualLeaderboard: [
     { rank: 1, name: 'Sunita Raman', avatar: '🌿', locality: 'Koramangala', points: 1420, divertedKg: 185 },
     { rank: 2, name: 'Karthik Raja', avatar: '🚴', locality: 'Indiranagar', points: 1280, divertedKg: 162 },
     { rank: 3, name: 'Ananya Roy', avatar: '🍃', locality: 'HSR Layout', points: 950, divertedKg: 110 },
-    { rank: 4, name: 'You (Demo User)', avatar: '🌱', locality: 'Malleshwaram', points: 460, divertedKg: 78.6 },
+    { rank: 4, name: 'You (Citizen Eco-Guard)', avatar: '🌱', locality: 'Indiranagar', points: 580, divertedKg: 92.5 },
     { rank: 5, name: 'Vikram Joshi', avatar: '♻️', locality: 'Whitefield', points: 410, divertedKg: 54 }
   ],
   communityLeaderboard: [
@@ -554,43 +274,86 @@ export const INITIAL_GAMIFICATION = {
 export const INITIAL_ALERTS = [
   {
     id: 'alt-1',
-    title: '⚠️ Overflowing Bin Reported in Your Vicinity',
-    message: 'High priority alert: Indiranagar 12th Main pedestrian bin has accumulated excess wet waste. Sanitation ward team notified.',
+    title: '⚠️ Overflowing Point in Your Locality',
+    message: 'Indiranagar 100ft Rd pedestrian bin has accumulated excess wet waste. Sanitation ward vehicle deployed.',
     type: 'warning',
     locality: 'Indiranagar',
-    date: '2 hours ago',
-    active: true
+    date: '1 hour ago',
+    active: true,
+    read: false
   },
   {
     id: 'alt-2',
-    title: '⚡ Community E-Waste Drive This Saturday',
-    message: 'Free authorized collection depot open from 9 AM to 4 PM at Koramangala BDA Complex. Bring dead batteries, laptops, and cables.',
+    title: '⚡ Community E-Waste Drive This Weekend',
+    message: 'Authorized free electronics collection depot open from 9 AM to 4 PM at Koramangala BDA Complex. Bring dead batteries, laptops, and wires.',
     type: 'info',
     locality: 'Koramangala & HSR',
     date: 'Yesterday',
-    active: true
+    active: true,
+    read: false
   },
   {
     id: 'alt-3',
-    title: '📊 Household Impact Alert: Plastic Reduction Trend',
-    message: 'Great progress! Your household single-use plastic disposal is down 32% compared to last month. Keep up the segregation habits!',
-    type: 'success',
-    locality: 'Household',
-    date: '3 days ago',
-    active: true
+    title: '📈 Rising Plastic Trend (≥20% Week-on-Week)',
+    message: 'Plastic takeaway packaging reports in Whitefield increased 22% this week. Volunteer clean-up drive scheduled for Saturday.',
+    type: 'warning',
+    locality: 'Whitefield',
+    date: '2 days ago',
+    active: true,
+    read: false
   },
   {
     id: 'alt-4',
-    title: '🎯 Community Target 85% Completed',
-    message: 'Whitefield ward has diverted 4.2 tons of cardboard and PET bottles toward registered circular recyclers this quarter.',
+    title: '🎯 Community Target 90% Completed',
+    message: 'HSR Layout ward has diverted 4.8 tons of dry cardboard and PET bottles toward registered circular recyclers this quarter!',
     type: 'success',
-    locality: 'Whitefield',
-    date: '4 days ago',
-    active: true
+    locality: 'HSR Layout',
+    date: '3 days ago',
+    active: true,
+    read: false
   }
 ];
 
-// Helper to load or initialize DB
+export const INITIAL_SUGGESTED_ITEMS = [
+  {
+    id: 'sug-1',
+    name: 'Air Fryer Parchment Paper Liners',
+    suggestedCategory: 'Dry/Recyclable',
+    userNotes: 'Used for cooking; silicone coated paper liner.',
+    status: 'Pending Review',
+    submittedAt: '2026-10-08T10:14:00Z'
+  },
+  {
+    id: 'sug-2',
+    name: 'Electronic Vape / E-Cigarette Device',
+    suggestedCategory: 'E-waste',
+    userNotes: 'Contains rechargeable lithium battery and heating coil.',
+    status: 'Pending Review',
+    submittedAt: '2026-10-07T14:22:00Z'
+  }
+];
+
+export const INITIAL_AUDIT_LOGS = [
+  {
+    id: 'aud-1',
+    action: 'Status Advanced',
+    entityType: 'Collection',
+    entityId: 'col-501',
+    adminUser: 'admin@ecosort.city',
+    timestamp: '2026-10-07T11:00:00Z',
+    details: 'Collection request col-501 status updated from Pending to Assigned (GreenClean Recyclers).'
+  },
+  {
+    id: 'aud-2',
+    action: 'Hotspot Resolved',
+    entityType: 'Report',
+    entityId: 'rep-104',
+    adminUser: 'admin@ecosort.city',
+    timestamp: '2026-10-07T18:00:00Z',
+    details: 'Plastic accumulation rep-104 resolved by Ward 82 clearing crew.'
+  }
+];
+
 class Database {
   constructor() {
     this.data = this.load();
@@ -600,10 +363,14 @@ class Database {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        // Ensure all required fields exist
+        if (parsed.wasteItems && parsed.reports && parsed.reports.length >= 20) {
+          return parsed;
+        }
       }
     } catch (err) {
-      console.warn('Error reading db.json, initializing defaults:', err.message);
+      console.warn('Error reading db.json, generating fresh data:', err.message);
     }
     const defaultData = {
       wasteItems: INITIAL_WASTE_ITEMS,
@@ -611,7 +378,10 @@ class Database {
       collections: INITIAL_COLLECTIONS,
       impactLogs: INITIAL_IMPACT_LOGS,
       gamification: INITIAL_GAMIFICATION,
-      alerts: INITIAL_ALERTS
+      alerts: INITIAL_ALERTS,
+      suggestedItems: INITIAL_SUGGESTED_ITEMS,
+      auditLogs: INITIAL_AUDIT_LOGS,
+      classificationFeedback: []
     };
     this.save(defaultData);
     return defaultData;
@@ -628,11 +398,14 @@ class Database {
   resetToDemo() {
     this.data = {
       wasteItems: INITIAL_WASTE_ITEMS,
-      reports: INITIAL_REPORTS,
+      reports: generateInitialReports(),
       collections: INITIAL_COLLECTIONS,
       impactLogs: INITIAL_IMPACT_LOGS,
       gamification: INITIAL_GAMIFICATION,
-      alerts: INITIAL_ALERTS
+      alerts: INITIAL_ALERTS,
+      suggestedItems: INITIAL_SUGGESTED_ITEMS,
+      auditLogs: INITIAL_AUDIT_LOGS,
+      classificationFeedback: []
     };
     this.save();
     return this.data;
@@ -640,4 +413,3 @@ class Database {
 }
 
 export const db = new Database();
-

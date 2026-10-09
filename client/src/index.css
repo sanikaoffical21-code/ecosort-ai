@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @layer base {
   :root {
@@ -43,5 +44,13 @@
 
 /* High contrast mode / accessibility helper */
 .accessibility-high-contrast {
-  filter: contrast(1.15);
+  filter: contrast(1.15) saturate(1.1);
+}
+
+/* Text size accessibility modifiers */
+html.text-size-large {
+  font-size: 112.5%;
+}
+html.text-size-xlarge {
+  font-size: 125%;
 }
